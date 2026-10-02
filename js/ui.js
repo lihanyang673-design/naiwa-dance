@@ -2,9 +2,9 @@
 // ui.js —— 界面系统：存档 / 导航 / 商城 / 图鉴 / 成就 / 排行 / 设置 / 结算
 //          + 玩家上传歌曲（自动生成谱面 → 存班级数据库 → 全班可玩）
 // ============================================================
-import { analyzeAudio } from './analyze.js?v=20261021';
+import { analyzeAudio } from './analyze.js?v=20261022';
 import { Music, setSfxEnabled, sfxClick, sfxCoin, sfxMiss, ensureCtx, setMenuBgmVolume, setVoiceVolume } from './audio.js?v=20260929r';
-import { Game, pauseGame } from './game.js?v=20261021';
+import { Game, pauseGame } from './game.js?v=20261022';
 
 // ============================================================
 // 存档（localStorage）
@@ -172,8 +172,10 @@ export async function loadStaticCharts(){
 // 玩家上传歌曲（存班级网站数据库，全班共享）
 // ============================================================
 export const USER_SONGS={ list:[], loaded:false, loadError:false };
+// 临时歌曲（网页版专用）：选本地文件→浏览器分析→直接玩；只存在内存里，刷新页面就消失
+export const TEMP_SONGS=[];
 let myIdentity=null;   // /api/me：{id, isAdmin}，用于判断能否删除
-let serverOn=false;    // 是否连着班级服务器（GitHub Pages 静态版为 false → 隐藏上传/在线排行）
+let serverOn=false;    // 是否连着班级服务器（静态版为 false → 上传走临时模式，在线排行不可用）
 
 function fmtDur(s){
   s=Math.round(s||0);
@@ -272,6 +274,7 @@ function preloadSong(song){
 
 // 能否删除某首玩家歌曲（上传者本人或管理员）
 function canDelete(song){
+  if(song.temp) return true;           // 临时歌：随时可本地移除
   if(!song.user || !myIdentity) return false;
   return myIdentity.isAdmin || song.uploaderId===myIdentity.id;
 }
@@ -476,9 +479,14 @@ export function renderHome(){
 
 // ---------- 开跳页 ----------
 function renderPlay(){
-  // 静态版（GitHub Pages）：没有班级服务器，隐藏上传入口
+  // 上传入口：有服务器→存班级曲库；网页版→临时歌曲（刷新就没）
   const upBtn=document.getElementById('btnUploadSong');
-  if(upBtn) upBtn.style.display=serverOn?'':'none';
+  if(upBtn){
+    upBtn.style.display='';
+    upBtn.innerHTML=serverOn
+      ? '⬆️ 上传歌曲 <small>AUTO CHART</small>'
+      : '🎲 临时歌曲 <small>选本地音乐直接玩</small>';
+  }
   // 舞池
   const tg=document.getElementById('themeGrid');
   tg.innerHTML='';
@@ -497,23 +505,25 @@ function renderPlay(){
     sg.innerHTML='';
     // 渲染前顺手刷新一次玩家歌曲（首次进页面时已拉过，这里只在未加载时补拉）
     SONG_CATS.forEach(cat=>{
-      const list=cat.id==='user' ? USER_SONGS.list : SONGS.filter(s=>s.cat===cat.id);
+      const list=cat.id==='user' ? [...TEMP_SONGS, ...USER_SONGS.list] : SONGS.filter(s=>s.cat===cat.id);
       if(!list.length){
         // 班级自制分区：哪怕还没歌也显示出来，让同学知道这里能放自己的歌
         if(cat.id==='user'){
           const head=document.createElement('div');
           head.className='song-cat-head';
-          const tip=!serverOn ? '网页版没有班级曲库，回到校园网就能玩全班上传的歌'
+          const tip=!serverOn ? '点上方「临时歌曲」选一首本地音乐，分析完就能玩（刷新页面会消失）'
             : (USER_SONGS.loadError ? '未连接班级服务器，暂时读不到曲库' : '还没有作品，点上方「上传歌曲」当第一个 DJ！');
           head.innerHTML=`<span class="sc-name">${cat.name}</span><span class="sc-tip">${tip}</span>`;
           sg.appendChild(head);
         }
         return;
       }
-      // 分类小标题
+      // 分类小标题（网页版时"班级自制"改叫"临时歌曲"）
+      const catName=(cat.id==='user'&&!serverOn)?'🎲 临时歌曲':cat.name;
+      const catTipText=(cat.id==='user'&&!serverOn)?'本地分析 · 刷新消失':cat.tip;
       const head=document.createElement('div');
       head.className='song-cat-head';
-      head.innerHTML=`<span class="sc-name">${cat.name}</span><span class="sc-tip">${cat.tip} · ${list.length} 首</span>`;
+      head.innerHTML=`<span class="sc-name">${catName}</span><span class="sc-tip">${catTipText} · ${list.length} 首</span>`;
       sg.appendChild(head);
       // 该分类下的歌曲卡片
       list.forEach(s=>{
@@ -522,11 +532,21 @@ function renderPlay(){
         b.style.background=`linear-gradient(135deg, #7a4dffcc, #36d1ffcc)`;
         b.innerHTML=`<div class="tname">🎵 ${s.name}</div><div class="tdesc">${s.artist} · ${s.bpm}BPM<br>${s.desc}</div>
           ${sel.song===s.id?'<span class="tag">✓ 已选</span>':''}
-          ${cat.id==='user' && canDelete(s)?'<span class="song-regen" title="用最新算法重新生成曲谱">🔄</span><span class="song-del" title="删除这首歌">🗑</span>':''}`;
+          ${cat.id==='user' && canDelete(s)?(s.temp?'<span class="song-del" title="移除（临时歌曲刷新也会消失）">🗑</span>':'<span class="song-regen" title="用最新算法重新生成曲谱">🔄</span><span class="song-del" title="删除这首歌">🗑</span>'):''}`;
         b.onclick=()=>{ sfxClick(); sel.song=s.id; renderPlay(); preloadSong(s); };
         if(cat.id==='user' && canDelete(s)){
           b.querySelector('.song-del').addEventListener('click',async ev=>{
             ev.stopPropagation();
+            // 临时歌：直接从内存移除，不碰服务器
+            if(s.temp){
+              const yes=await askConfirm(`确定移除《${s.name}》吗？`, {yesText:'移除'});
+              if(!yes) return;
+              URL.revokeObjectURL(s.file);
+              const i=TEMP_SONGS.indexOf(s); if(i>=0) TEMP_SONGS.splice(i,1);
+              if(sel.song===s.id) sel.song='default';
+              renderPlay();
+              return;
+            }
             const yes=await askConfirm(`确定删除《${s.name}》吗？全班都无法再玩这首歌了`, {yesText:'删除'});
             if(!yes) return;
             try{
@@ -902,7 +922,20 @@ function bindUpload(){
   }
   $('btnUploadSong').addEventListener('click',()=>{
     ensureCtx(); sfxClick();
-    reset(); ov.classList.add('on');
+    reset();
+    // 根据是否连着班级服务器，切换弹窗文案（临时模式 / 入库模式）
+    const head=document.querySelector('#uploadOv .up-head');
+    const tip=document.querySelector('#uploadOv .up-tip');
+    const note=document.querySelector('#uploadOv .up-note');
+    if(head) head.innerHTML=serverOn ? '⬆️ 上传歌曲 <small>AUTO CHART</small>' : '🎲 临时歌曲 <small>TEMP CHART</small>';
+    if(tip) tip.textContent=serverOn
+      ? '选一首音乐 → 浏览器自动分析节奏生成谱面 → 存进班级曲库，全班都能跳'
+      : '选一首本地音乐 → 浏览器自动分析节奏生成谱面 → 直接开跳。不会上传，刷新页面就消失';
+    if(note) note.textContent=serverOn
+      ? '上传需要先登录班级网站 · 请上传有版权使用权的音乐哦'
+      : '纯本地分析，不会上传任何文件 · 请使用有版权使用权的音乐哦';
+    submit.textContent=serverOn ? '⬆️ 上传到班级曲库' : '🎮 生成并开跳';
+    ov.classList.add('on');
   });
   $('upCancel').addEventListener('click',()=>{ sfxClick(); ov.classList.remove('on'); });
   ov.addEventListener('click',e=>{ if(e.target===ov && !analyzing) ov.classList.remove('on'); });
@@ -935,12 +968,35 @@ function bindUpload(){
     }
   });
 
-  // 上传：音频 + 谱面一起 POST，存进班级数据库（登录与否都能传，游客记为"游客"）
+  // 有服务器：上传到班级曲库；网页版：生成临时歌曲直接玩
   submit.addEventListener('click', async ()=>{
     if(!analyzed || analyzing) return;
     submit.disabled=true;
-    stage.textContent='正在上传到班级曲库…';
     const title=(titleIn.value.trim()||'未命名歌曲');
+    // ===== 网页版临时模式：不联网，直接内存建歌 =====
+    if(!serverOn){
+      const url=URL.createObjectURL(analyzed.file);
+      const song={
+        id:'temp'+Date.now(),
+        name:title,
+        artist:artistIn.value.trim()||'本地音乐',
+        file:url,
+        bpm:analyzed.bpm,
+        desc:`${analyzed.notes.length} 音符 · ${fmtDur(analyzed.duration)} · ⏱临时`,
+        cat:'user', user:true, temp:true,
+        chart:analyzed.notes,
+      };
+      TEMP_SONGS.push(song);
+      sel.song=song.id;
+      ov.classList.remove('on');
+      reset();
+      toast('🎵 《'+title+'》准备好了，选好难度点「开始表演」！');
+      sfxCoin();
+      renderPlay();
+      return;
+    }
+    // ===== 班级服务器模式：POST 入库 =====
+    stage.textContent='正在上传到班级曲库…';
     try{
       const fd=new FormData();
       fd.append('audio', analyzed.file);
