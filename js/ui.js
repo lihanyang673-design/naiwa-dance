@@ -3,8 +3,8 @@
 //          + 玩家上传歌曲（自动生成谱面 → 存班级数据库 → 全班可玩）
 // ============================================================
 import { analyzeAudio } from './analyze.js?v=20261025';
-import { Music, setSfxEnabled, sfxClick, sfxCoin, sfxMiss, ensureCtx, setMenuBgmVolume, setVoiceVolume } from './audio.js?v=20261035';
-import { Game, pauseGame } from './game.js?v=20261035';
+import { Music, setSfxEnabled, sfxClick, sfxCoin, sfxMiss, ensureCtx, setMenuBgmVolume, setVoiceVolume } from './audio.js?v=20261040';
+import { Game, pauseGame } from './game.js?v=20261040';
 
 // ============================================================
 // 存档（localStorage）
@@ -904,6 +904,34 @@ function bindSettings(){
     if(confirm('确定清空全部进度？此操作不可恢复！')){
       Store.reset(); applyVolume(); renderHome(); refreshPlayerId(); toast('存档已清空');
     }
+  };
+
+  // ---- 清理本站缓存：只删旧【代码】文件，保留 3D 模型/图片（重新下载模型很慢）----
+  // 同学自己就能点，不用清整个浏览器/QQ；存档(localStorage)完全不动
+  $('btnClearCache').onclick=async()=>{
+    const btn=$('btnClearCache');
+    btn.textContent='清理中…'; btn.disabled=true;
+    let delN=0, keptN=0;
+    try{
+      if('caches' in window){
+        const CODE=/\.(html|js|css|json)(\?.*)?$/i;   // 只清代码；.glb/.gltf/.bin/图片/音频一律保留
+        for(const name of await caches.keys()){
+          const cache=await caches.open(name);
+          for(const req of await cache.keys()){
+            const p=new URL(req.url).pathname;
+            if(CODE.test(p)){ await cache.delete(req); delN++; }
+            else keptN++;
+          }
+        }
+      }
+      // 注意：不注销 Service Worker —— 它是"网络优先"，在线时永远先拿新代码，旧缓存只在断网时兜底
+      toast(`已清 ${delN} 个旧代码文件，3D模型等 ${keptN} 个文件保留；2秒后刷新`);
+    }catch(e){
+      console.error('清缓存失败', e);
+      toast('清理完成，2秒后自动刷新');
+    }
+    // 带随机参数强制刷新，确保 HTML/JS 拿到全新文件
+    setTimeout(()=>{ location.href=location.pathname+'?v='+Date.now(); }, 2000);
   };
 
   // ---- 管理员认证：调全站统一接口，认证后会话获得管理员模式 ----
