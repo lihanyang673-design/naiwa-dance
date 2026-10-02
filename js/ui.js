@@ -2,9 +2,9 @@
 // ui.js —— 界面系统：存档 / 导航 / 商城 / 图鉴 / 成就 / 排行 / 设置 / 结算
 //          + 玩家上传歌曲（自动生成谱面 → 存班级数据库 → 全班可玩）
 // ============================================================
-import { analyzeAudio } from './analyze.js?v=20261024';
+import { analyzeAudio } from './analyze.js?v=20261025';
 import { Music, setSfxEnabled, sfxClick, sfxCoin, sfxMiss, ensureCtx, setMenuBgmVolume, setVoiceVolume } from './audio.js?v=20260929r';
-import { Game, pauseGame } from './game.js?v=20261024';
+import { Game, pauseGame } from './game.js?v=20261025';
 
 // ============================================================
 // 存档（localStorage）
@@ -211,9 +211,11 @@ export async function refreshUserSongs(){
   }catch(e){ myIdentity=null; updateAdminAuthUI(); }
 }
 
-// 按 id 找歌（内置 + 玩家上传），main.js 用
+// 按 id 找歌（临时 + 内置 + 玩家上传），main.js 用
 export function getSongById(id){
-  return USER_SONGS.list.find(s=>s.id===id) || SONGS.find(s=>s.id===id);
+  return TEMP_SONGS.find(s=>s.id===id)
+    || USER_SONGS.list.find(s=>s.id===id)
+    || SONGS.find(s=>s.id===id);
 }
 // 拉取玩家歌曲的谱面（选歌后缓存到歌曲对象上）
 export async function ensureChart(song){
