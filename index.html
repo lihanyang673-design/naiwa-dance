@@ -1,10 +1,10 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
 <title>奶娃街舞 · Dance Baby</title>
-<link rel="stylesheet" href="style.css?v=20261043">
+<link rel="stylesheet" href="style.css?v=20261070">
 </head>
 <body>
 
@@ -21,6 +21,47 @@
   <!-- 初始化就绪前隐藏；就绪后由 main.js 点亮，点击解锁音频并开始开场 -->
   <button class="gate-btn hidden" id="loadStart" disabled>🎵 开 跳 🎵</button>
   <div class="load-sub" id="loadSub">首次加载需下载 3D 模型，请稍候…</div>
+</div>
+
+<!-- 公告弹窗：进入主界面后按「日期 + 公告版本」检查；勾选今日不再弹出则当天隐藏。
+     更新公告内容时由 js 里的 NOTICE_VER 控制：版本一变，即使当天勾选过也会重新弹出 -->
+<div id="noticeOv">
+  <div class="notice-box">
+    <div class="notice-hd">📢 公告</div>
+    <div class="notice-bd" id="noticeBody">
+      <p class="nb-p">本网址游戏内容仅在原作者基础上做了一定修改。</p>
+      <div class="cp-row">
+        <div class="cp-meta">
+          <span class="cp-label">🏠 本站网址</span>
+          <span class="cp-val">https://lihanyang673-design.github.io/class-website/</span>
+        </div>
+        <button class="notice-copy" data-copy="https://lihanyang673-design.github.io/class-website/">📋 复制</button>
+      </div>
+      <div class="cp-row">
+        <div class="cp-meta">
+          <span class="cp-label">🔗 原作者网址</span>
+          <span class="cp-val">https://nailong-dance.pages.dev</span>
+        </div>
+        <button class="notice-copy" data-copy="https://nailong-dance.pages.dev">📋 复制</button>
+      </div>
+      <div class="cp-row">
+        <div class="cp-meta">
+          <span class="cp-label">🌸 本人 QQ · 落花雨</span>
+          <span class="cp-val">3241484675</span>
+        </div>
+        <button class="notice-copy" data-copy="3241484675">📋 复制</button>
+      </div>
+      <div class="cp-row">
+        <div class="cp-meta">
+          <span class="cp-label">🎩 原作者 QQ · 念因</span>
+          <span class="cp-val">1139568835</span>
+        </div>
+        <button class="notice-copy" data-copy="1139568835">📋 复制</button>
+      </div>
+    </div>
+    <label class="notice-chk"><input type="checkbox" id="noticeHideToday"> 今日内不再弹出</label>
+    <button class="notice-btn" id="noticeOk">我知道了</button>
+  </div>
 </div>
 
 <!-- 开局加载进度条：点「开始表演」后显示，音频/谱面/方块就绪再开演 -->
@@ -58,6 +99,8 @@
       <button data-scr="scr-board">📊 排行榜</button>
       <button data-scr="scr-endless">♾ 无尽榜</button>
       <button data-scr="scr-set">⚙️ 设置</button>
+      <!-- GitHub 展示版专用：回到入口大厅（校园网运行时不显示） -->
+      <button id="navHallBtn" onclick="location.href='../../'" style="display:none">⬅ 大厅</button>
     </nav>
     <div class="coin-chip">🪙 <span id="coinNum">0</span></div>
   </header>
@@ -149,6 +192,7 @@
       <button data-d="casual">🙂 进阶</button>
       <button data-d="normal">🔥 狂热</button>
       <button data-d="hard">💀 地狱</button>
+      <button data-d="endless">♾ 无尽</button>
     </div>
     <div class="rank-help">💡 <b>什么是相对分？</b>每首歌音符多少不同，直接比总分不公平。<b>相对分 = 你的得分 ÷ 这首歌的满分 × 100000</b>（满分就是"一个不漏、全部打完美"的成绩）。所以相对分越高，代表越接近完美；范围固定 0～100000，任何歌曲都能公平比较。</div>
     <div id="rankList"></div>
@@ -176,7 +220,7 @@
       <button class="btn-back" data-back>← 返回</button>
       <div class="sec-title" style="margin:0">♾ 无尽榜 <small>ENDLESS</small></div>
     </div>
-    <div class="rank-help">♾ <b>无尽是独立难度</b>：在选歌页直接选「♾ 无尽」开局，<b>计分从 0 开始</b>，音乐循环播放且<b>约每分钟提速 10%</b>（歌几分钟就切几+1段，方块同倍率变快，最高 2×）；❤×5 被 Miss 打光即结束。排行按<b>总分</b>，每人每首歌只记最高一次。</div>
+    <div class="rank-help">♾ <b>无尽是独立难度</b>：在选歌页直接选「♾ 无尽」开局，<b>计分从 0 开始</b>，音乐循环播放且<b>约每分钟提速 10%</b>（歌几分钟就切几+1段，方块同倍率变快，最高 2×）；❤×10 被 Miss 打光即结束。排行按<b>总分</b>，每人每首歌只记最高一次。</div>
     <select id="endlessSong" class="board-select"></select>
     <div id="endlessList"></div>
   </section>
@@ -219,6 +263,8 @@
         <option value="1.3">疾风 1.3×</option>
         <option value="1.6">闪电 1.6×</option>
       </select>
+      <input type="number" id="setSpeedNum" class="speed-num" min="0.5" max="3" step="0.1" value="1">
+      <span class="mini-tip">数字越大方块飞得越快，可手动输入 0.5~3.0（标准 1.0）；只影响四个普通模式，无尽模式不受影响</span>
     </div>
     <div class="set-item">
       <span class="sl">🖥️ 画面质量</span>
@@ -373,6 +419,10 @@
 }
 </script>
 <script src="js/codec.js?v=20260929l"></script>
-<script type="module" src="js/main.js?v=20261043"></script>
+<script type="module" src="js/main.js?v=20261070"></script>
+<script>
+// GitHub 展示版：显示导航栏"⬅ 大厅"按钮（校园网运行时不显示）
+if (location.hostname.indexOf('github.io') >= 0) document.getElementById('navHallBtn').style.display = '';
+</script>
 </body>
 </html>

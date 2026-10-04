@@ -1,11 +1,11 @@
-﻿// ============================================================
+// ============================================================
 // game.js —— 节奏玩法核心
 // 判定线 + 四方向箭头掉落 + Perfect/Good/Miss + 连击计分
 // 箭头用 DOM（贴判定线，清晰锐利），3D 舞台在背后同步反馈
 // ============================================================
 import * as THREE from 'three';
-import { Music, sfxPerfect, sfxGood, sfxMiss, sfxRandomVoice } from './audio.js?v=20261043';
-import { doAction, stumble } from './dancer.js?v=20260929r';
+import { Music, sfxPerfect, sfxGood, sfxMiss, sfxRandomVoice } from './audio.js?v=20261070';
+import { doAction, stumble } from './dancer.js?v=20261070';
 import { laneFlash, burst, ringPulse, shake } from './fx.js?v=20260929r';
 
 // ---------- 判定窗口（秒） ----------
@@ -13,6 +13,16 @@ const WIN_GOOD = 0.15, WIN_PERFECT = 0.07, WIN_MISS = 0.19;
 const LANE_HEX = [0xff3b6b, 0x36d1ff, 0xffe17a, 0x7a4dff];  // 四轨道主题色
 // 相邻方块最小间隔（秒）：高 BPM 歌曲的半拍会密到看不清，统一卡一个下限（同时点的双押不受限）
 const MIN_GAP = 0.22;
+
+// ---------- 可见窗口（音符提前多少秒开始显示） ----------
+// 普通模式恒为 VIS_BASE；无尽模式随倍速线性扩大，补偿高速下变短的反应时间。
+// 锚点：1.1×=0.9s(5行) · 1.4×=1.08s(6行) · 1.7×=1.26s(7行) · 2.0×=1.44s(8行)
+// 拟合直线 k=1+(rate-1.1)×2/3，窗口 = VIS_BASE×k。只放宽显示阈值，不碰方块大小/间距/下落速度。
+const VIS_BASE = 0.9;
+function endlessVisTarget(rate){
+  const r = Math.min(2, Math.max(1.1, rate));
+  return VIS_BASE * (1 + (r - 1.1) * (2/3));
+}
 
 export const Game = {
   playing:false, paused:false,
@@ -24,6 +34,9 @@ export const Game = {
   _raf:0, _lastY:0,
   _head:0, _hitY:0,                  // 滑动窗口头指针 + 缓存的判定线位置
   _lastRaw:0,                        // 无尽用：上一帧的音频原始时钟（检测循环回绕）
+  _visWin:VIS_BASE,                  // 当前可见窗口（秒）：帧间向 _visTarget 平滑靠拢
+  _visTarget:VIS_BASE,
+  _lastFrameMs:0,
 };
 if(typeof window!=='undefined') window.__game=Game;   // 调试只读钩子（同 __music/__danceParts 风格）
 
@@ -55,8 +68,9 @@ function strSeed(s){
 //      → 方块在轨道间跳散，同轨永远不会连续紧挨（这是音游手感的关键）
 // 当前四档参数由用户拍板：地狱=旧狂热（无碎拍），狂热再下调。
 // 时间点全部取自存库密谱（对齐音乐），随机走 mulberry32 固定种子 → 同一首歌每次一样。
-function chartNotes(chart, diff, durSec, seedStr){
+export function chartNotes(chart, diff, durSec, seedStr, minGap){
   const end = Math.max(4, durSec - 0.5);
+  const gap = minGap || MIN_GAP;   // 无尽模式放宽到 0.18s（视野扩大后大空隙现形）；其他难度沿用 0.22s
   const P = {
     easy  : {cand:4, rest:0.25, dbl:0.00, burst:0.00},
     casual: {cand:2, rest:0.55, dbl:0.02, burst:0.00},
@@ -79,7 +93,7 @@ function chartNotes(chart, diff, durSec, seedStr){
     const t=+chart[i].t;
     if(t<1.0 || t>end) continue;
     if(rnd() < P.rest) continue;                    // 原版：按概率休息（休息不换道）
-    if(t - lastT < MIN_GAP) continue;               // 与上一个方块太近（高 BPM 半拍）→ 强制休息
+    if(t - lastT < gap) continue;               // 与上一个方块太近（高 BPM 半拍）→ 强制休息
     add(t, lane); lastT=t;
     if(P.dbl && rnd() < P.dbl){                     // 原版：按概率双押（第二轨必不同于本轨）
       add(t, (lane + 1 + ((rnd()*3)|0)) % 4);
@@ -178,16 +192,16 @@ export function startGame(cfg, defer){
   const endless = cfg.diff==='endless';
   const gdiff = endless ? 'hard' : cfg.diff;    // 无尽谱面密度 = 地狱
   Game.notes = cfg.chart && cfg.chart.length
-    ? chartNotes(cfg.chart, gdiff, cfg.duration, cfg.songId||'')
+    ? chartNotes(cfg.chart, gdiff, cfg.duration, cfg.songId||'', endless?0.18:MIN_GAP)
     : genChart(gdiff, cfg.bpm, cfg.duration, cfg.offset/1000, cfg.songId||'');
   Game.score=0; Game.combo=0; Game.maxCombo=0;  // 任何难度（含无尽）计分都从 0 开始
   Game.cnt={perfect:0,good:0,miss:0};
-  // ===== 无尽难度：音乐循环 + 每段提速 + ❤×5 =====
+  // ===== 无尽难度：音乐循环 + 每段提速 + ❤×10 =====
   if(endless){
     // 切段规则：歌几分钟就切几+1段（约每分钟一段提速一次）；3.5分钟的歌 = 4段
     const segN=Math.max(1, Math.floor(cfg.duration/60)+1);
     const segLen=cfg.duration/segN;
-    Game.endless={ base:0, round:1, lives:5, segLen, nextBoundary:segLen };
+    Game.endless={ base:0, round:1, lives:10, segLen, nextBoundary:segLen };
     Music.el.loop=true;                // 音乐循环播放
     Music.el.playbackRate=1.1;         // 无尽第 1 段就提速 10%
   }else{
@@ -197,6 +211,7 @@ export function startGame(cfg, defer){
   }
   Game.playing=true; Game.paused=false;
   Game._head=0; Game._lastRaw=0;
+  Game._visWin=VIS_BASE; Game._visTarget=VIS_BASE; Game._lastFrameMs=0;   // 每局视野从基准开始
   // 判定线位置缓存：开局算一次，窗口尺寸变化时更新（避免主循环每帧读 offsetTop 强制重排）
   Game._hitY=document.getElementById('hitLine').offsetTop;
   if(!Game._onResize){
@@ -224,30 +239,28 @@ export function startGame(cfg, defer){
   beginPlayback(endless);
 }
 
-// 真正开播：音乐 + 主循环（无尽顺带弹开局提醒）。返回是否成功
+// 真正开播：音乐 + 主循环（无尽顺带弹开局提醒）
 async function beginPlayback(endless){
-  try{
-    await Music.play();
-  }catch(e){
-    console.warn('[音乐] 闸门开播失败', e);
-    return false;
-  }
+  // 卡顿全靠主循环的滑动窗口：已处理的永久跳过、每帧只算1.4秒内的几个方块
+  const ok=await Music.play();
+  if(!ok) return false;
   if(endless) speedToast('♾ 无尽模式 · 计分从0开始 · 1.1×');
   loop();
   return true;
 }
 
-// 由「开演」按钮调用：在用户真实点击的手势里同步开播
+// 倒计时归零自动开播（手机浏览器拦截时，也用于兜底按钮）：
+// 成功 → 收起闸门；失败 → 闸门留着提示再点一次
 export async function launchFromGate(){
-  const gate=document.getElementById('stageGate');
-  const sub=document.getElementById('stageGateSub');
-  gate.classList.remove('on');
   const ok=await beginPlayback(!!Game.endless);
-  if(!ok){
-    // 开播被拒/失败：闸门重新出现，让玩家再点一次（每次点击都是新的真手势）
-    sub.textContent='刚才没播成功，请再点一次按钮';
-    gate.classList.add('on');
+  const gate=document.getElementById('stageGate');
+  if(ok){
+    gate?.classList.remove('on');
+  }else{
+    const sub=document.getElementById('stageGateSub');
+    if(sub) sub.textContent='音乐没启动，点一下上面的按钮';
   }
+  return ok;
 }
 
 export function pauseGame(){
@@ -289,12 +302,21 @@ function loop(){
   }
   const t = Game.endless ? raw + Game.endless.base : raw;   // 谱面时间（跨段累加，永远前进）
   const hitY = Game._hitY;                     // 判定线位置（开局/窗口变化时才算，避免每帧强制重排）
-  const pps = 340 * Game.cfg.speed;            // 像素/秒
+  const pps = Game.endless ? 340 : 340 * Game.cfg.speed;  // 像素/秒（无尽固定基准，不吃自定义速度；它靠 playbackRate 提速）
+
+  // 可见窗口：无尽随倍速平滑扩大（补偿反应时间）；其他模式恒为基准
+  const nowMs=performance.now();
+  const fdt=Game._lastFrameMs ? Math.min(0.05,(nowMs-Game._lastFrameMs)/1000) : 0.016;
+  Game._lastFrameMs=nowMs;
+  Game._visTarget = Game.endless ? endlessVisTarget(Music.el.playbackRate) : VIS_BASE;
+  Game._visWin += (Game._visTarget-Game._visWin)*Math.min(1,fdt*6);
+  const visWin=Game._visWin;
 
   // 滑动窗口头指针：已终结的音符（hit/miss）永久跳过，不再每帧从头扫
   const ns = Game.notes;
   while(Game._head < ns.length && ns[Game._head].state !== 0) Game._head++;
 
+  let spawnLeft=2;   // ★ 本帧最多新建2个方块：把DOM创建分摊到多帧，避免开局/循环时一帧建十几个造成卡顿
   for(let i=Game._head; i<ns.length; i++){
     const n = ns[i];
     const dt = n.t - t;
@@ -302,12 +324,14 @@ function loop(){
       if(n.el && n.el.dataset.done!=='2' && dt < -WIN_MISS){ n.el.remove(); n.el.dataset.done='2'; }
       continue;
     }
-    if(dt > 1.4) break;                        // 还没进场（notes 按时间有序）
-    // 延迟创建：进入1.4秒窗口的此刻才建方块DOM（每帧最多几个，开局不再卡）
-    if(!n.el) spawnNoteEl(n);
+    const spawnAhead=Math.max(1.8, visWin+0.4);  // 提前建方块：保证扩大后的窗口内音符都已就位
+    if(dt > spawnAhead) break;
+    // 延迟创建：每帧最多2个；但0.6秒内就要可见的必须立即建（兜底，任何情况都不会漏方块）
+    if(!n.el && (spawnLeft>0 || dt<=0.6)){ spawnNoteEl(n); spawnLeft--; }
+    if(!n.el) continue;                        // 本帧还没轮到建它 → 下帧再说
     // 位置：判定线上方 dt 秒 × 速度（y 为相对轨道顶端的绝对坐标）
     const y = hitY - dt*pps - 26;              // -26 让箭头中心对准判定线
-    if(dt > 0.9){ n.el.style.display='none'; continue; }
+    if(dt > visWin){ n.el.style.display='none'; continue; }
     if(n.el.style.display==='none') n.el.style.display='';
     n.el.style.transform = `translateY(${y}px)`;
     // 过线未按 → Miss
@@ -402,7 +426,7 @@ function updateHud(){
     const E=Game.endless;
     const rate=(1 + 0.1*E.round).toFixed(1);
     document.getElementById('hudMeta').textContent =
-      '❤'.repeat(Math.max(0,E.lives))+'🖤'.repeat(Math.max(0,5-E.lives))+' 第'+E.round+'段 · '+rate+'×';
+      '❤ ×'+E.lives+'/10 · 第'+E.round+'段 · '+rate+'×';
   }else{
     const total = Game.cnt.perfect+Game.cnt.good+Game.cnt.miss;
     const acc = total ? Math.round((Game.cnt.perfect + Game.cnt.good*0.5)/total*100) : 100;
@@ -475,7 +499,7 @@ function nextRound(wrap){
     E.nextBoundary = E.segLen;    // 段界在新圈内重新计
     // 重新生成同一圈谱面并平移追加（notes 保持有序，滑动窗口/判定逻辑全部无感复用）
     let seg;
-    if(cfg.chart && cfg.chart.length) seg=chartNotes(cfg.chart,'hard',cfg.duration,cfg.songId||'');
+    if(cfg.chart && cfg.chart.length) seg=chartNotes(cfg.chart,'hard',cfg.duration,cfg.songId||'',0.18);
     else seg=genChart('hard',cfg.bpm,cfg.duration,cfg.offset/1000,cfg.songId||'');
     // 只追加音符数据，不建DOM（延迟创建会在它们进场前逐个建，避免一圈结束时顿卡）
     for(const n of seg){ n.t += E.base; Game.notes.push(n); }

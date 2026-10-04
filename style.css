@@ -366,6 +366,10 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 .rank-row .rj-g{color:var(--yellow)}
 .rank-row .rj-m{color:var(--pink)}
 .rank-row .rmeta{font-size:11.5px;color:var(--sub)}
+/* 无尽本地记录：绝对分大字（代替相对分进度条的位置） */
+.rank-row .ebig{font-size:23px;font-weight:900;line-height:1.15;color:var(--yellow);
+  text-shadow:0 0 16px rgba(255,225,122,.35)}
+.rank-row .ebig small{margin-left:7px;font-size:11px;font-weight:600;color:var(--sub)}
 .rank-row .rrank{font-weight:900;font-size:18px;color:var(--yellow);padding-top:2px}
 .rank-empty{padding:40px;text-align:center;color:var(--sub)}
 
@@ -377,6 +381,8 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 .set-item input[type=range]{flex:1;min-width:160px;accent-color:var(--pink)}
 .set-item select{background:var(--bg1);color:#fff;border:1px solid var(--line);
   border-radius:10px;padding:8px 12px;font-size:14px}
+.set-item input.speed-num{width:88px;background:var(--bg1);color:#fff;border:1px solid var(--line);
+  border-radius:10px;padding:8px 10px;font-size:14px}
 .set-item .mini-tip{width:100%;font-size:12px;color:var(--sub)}
 
 /* ---------- 结算 ---------- */
@@ -416,6 +422,15 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 }
 #stageGate .gate-sub{margin-top:14px;font-size:13px;color:#fff;text-shadow:0 1px 4px #000;opacity:.92;text-align:center;padding:0 20px}
 @keyframes gatePulse{0%,100%{transform:scale(1)}50%{transform:scale(1.06)}}
+
+/* 倒计时大数字（3、2、1）：盖住按钮原本的脉动样式，每秒缩放弹出一次 */
+#stageGateBtn.counting{
+  width:150px;height:150px;border-radius:50%;padding:0;
+  font-size:76px;color:#fff;background:rgba(22,26,64,.55);
+  box-shadow:0 0 0 4px #ffffff55,0 10px 34px #0009;
+  animation:countPop 1s ease-out;
+}
+@keyframes countPop{0%{transform:scale(1.7);opacity:.25}100%{transform:scale(1);opacity:1}}
 
 /* 分数/连击 */
 #hud{position:absolute;top:70px;left:20px;text-shadow:0 2px 8px #000a}
@@ -571,6 +586,38 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 #pauseOv.on{display:flex}
 #pauseOv .pbox{text-align:center;display:flex;flex-direction:column;gap:14px}
 #pauseOv .pt{font-size:34px;font-weight:900;letter-spacing:8px;margin-bottom:8px}
+
+/* ---------- 公告弹窗 ---------- */
+#noticeOv{
+  position:fixed;inset:0;z-index:150;display:none;align-items:center;justify-content:center;
+  background:#160a24cc;backdrop-filter:blur(6px);padding:24px;
+}
+#noticeOv.on{display:flex}
+.notice-box{
+  width:min(420px,92vw);max-height:90vh;overflow:auto;
+  background:linear-gradient(160deg,#2c1450,#241040);
+  border:2px solid var(--pink);border-radius:20px;padding:16px 18px 14px;
+  box-shadow:0 0 40px #ff3b6b55,inset 0 0 30px #7a4dff22;
+  display:flex;flex-direction:column;gap:9px;
+  animation:noticePop .35s cubic-bezier(.2,1.4,.4,1);
+}
+@keyframes noticePop{from{transform:scale(.8);opacity:0}to{transform:scale(1);opacity:1}}
+.notice-hd{font-size:19px;font-weight:900;color:var(--yellow);text-shadow:0 0 12px #ffe17a88}
+.notice-bd{font-size:14px;line-height:1.55;white-space:pre-wrap;word-break:break-word}
+.notice-bd .nb-p{margin-bottom:2px}
+.cp-row{display:flex;align-items:center;gap:10px;margin-top:6px;
+  background:var(--glass);border:1px solid var(--line);border-radius:12px;padding:7px 10px}
+.cp-meta{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px}
+.cp-label{font-size:12px;font-weight:800;color:var(--cyan)}
+.cp-val{font-size:13px;color:var(--yellow);word-break:break-all;user-select:text}
+.notice-copy{flex-shrink:0;padding:6px 11px;border-radius:99px;font-size:12px;font-weight:800;color:#fff;
+  background:linear-gradient(135deg,#ff3b6b,#7a4dff);box-shadow:0 4px 12px #ff3b6b33}
+.notice-copy:active{transform:scale(.94)}
+.notice-chk{display:flex;align-items:center;gap:7px;font-size:13px;color:var(--sub);cursor:pointer;margin-top:2px}
+.notice-chk input{width:16px;height:16px;accent-color:var(--pink);cursor:pointer}
+.notice-btn{margin-top:1px;padding:10px;border-radius:99px;font-size:15px;font-weight:900;color:#fff;
+  background:linear-gradient(135deg,#ff3b6b,#7a4dff);box-shadow:0 6px 18px #ff3b6b44}
+.notice-btn:active{transform:scale(.96)}
 
 /* Toast */
 #toast{

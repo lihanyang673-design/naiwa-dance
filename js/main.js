@@ -1,15 +1,15 @@
-﻿// ============================================================
+// ============================================================
 // main.js —— 程序入口 / 总调度
 // 渲染器（开场+主舞台共用） → 开场动画 → 主舞台 → 渲染循环
 // ============================================================
 import * as THREE from 'three';
-import { ensureCtx, Music, startMenuBgm, stopMenuBgm, setMenuBgmVolume, sfxClick, sfxBoing, sfxBoop, sfxEndVoice, sfxPokeVoice, sfxRandomVoice } from './audio.js?v=20261043';
-import { runOpening, updateOpening, begin as beginOpening, Opening } from './opening.js?v=20261043';
-import { loadDancer, updateDancer, setSkin, celebrate, lieDown, resetBody, Dancer } from './dancer.js?v=20260929r';
+import { ensureCtx, Music, startMenuBgm, stopMenuBgm, setMenuBgmVolume, sfxClick, sfxBoing, sfxBoop, sfxEndVoice, sfxPokeVoice, sfxRandomVoice } from './audio.js?v=20261070';
+import { runOpening, updateOpening, begin as beginOpening, Opening } from './opening.js?v=20261070';
+import { loadDancer, updateDancer, setSkin, celebrate, lieDown, resetBody, Dancer } from './dancer.js?v=20261070';
 import { initFx, updateFx, Fx, burst } from './fx.js?v=20260929r';
-import { Game, startGame, stopGame, pauseGame, resumeGame, hitLane, launchFromGate } from './game.js?v=20261043';
+import { Game, startGame, stopGame, pauseGame, resumeGame, hitLane, launchFromGate } from './game.js?v=20261070';
 import { THEMES, SKINS, SONGS, initUI, showUIRoot, showStageUI, showScreen, showResult, showEndlessResult,
-         checkAch, getSelection, toast, renderHome, Store, getSongById, ensureChart } from './ui.js?v=20261043';
+         checkAch, getSelection, toast, renderHome, Store, getSongById, ensureChart } from './ui.js?v=20261070';
 
 const $=id=>document.getElementById(id);
 let stageGateBound=false;    // 「点我开演」闸门按钮只绑定一次
@@ -176,7 +176,7 @@ const dancerReady=new Promise((res)=>{
 addEventListener('dancer-progress',e=>{
   const pct=e.detail;
   // 舞者下载占进度条 5%~60% 区间
-  $('loadBar').style.width=(5+pct*0.55)+'%';
+  $('loadBar').style.width=Math.min(100,(5+pct*0.55))+'%';
   $('loadSub').textContent=`舞者模型下载中 ${pct}%`;
 });
 
@@ -198,12 +198,9 @@ const main={
   async startShow(themeId,diffId,songId){
     ensureCtx();
     stopMenuBgm();              // 开演：停菜单 BGM，交由歌曲
-    // ===== 开局加载进度条：把音频/谱面/方块的准备过程摆到明面上 =====
-    const pl=$('playLoad'), plBar=$('playLoadBar'), plTxt=$('playLoadTxt');
-    const setP=(p,t)=>{ plBar.style.width=p+'%'; if(t) plTxt.textContent=t; };
-    pl.classList.add('on'); setP(3,'🎵 完整下载歌曲中…');
-    // 切换歌曲（含玩家上传歌曲）
+    // 点开始后舞台中央倒计时 3、2、1，归零才开演（这3秒浏览器顺便缓冲歌曲）
     const song=getSongById(songId)||SONGS[0];
+    Music.setSong(song.file);
     const theme=THEMES.find(t=>t.id===themeId);
     if(theme && theme.id!==curTheme.id) buildStage(theme);
     const set=Store.data.set;
@@ -212,33 +209,20 @@ const main={
     showStageUI(true);
     camera.position.copy(CAM_PLAY);
     Fx.camBase.copy(CAM_PLAY);
-    resetBody();               // ★ 开演前复位奶娃（清上局躺地/庆祝残留）
+    resetBody();               // ★ 开演前复位奶蛙（清上局躺地/庆祝残留）
     Game.hooks.onEnd=onShowEnd;
     Game.hooks.onEndlessEnd=onEndlessOver;
-    // ★ 门槛1：歌曲预缓冲到约12秒（进度 3%→70% 随真实缓冲推进；音频已压缩，几秒就好）
-    const dur = await Music.preloadBuffer(song.file, 12, (ratio, sec)=>{
-      setP(3+Math.round(ratio*67), `🎵 缓冲歌曲中（已缓冲 ${Math.round(sec)} 秒）`);
-    });
-    // ★ 门槛2：整首曲谱完整拉取（78%→88%）
-    setP(78,'🎼 完整加载曲谱…');
+    // 拿到歌曲真实时长（很快，元数据选歌时一般已就绪）
+    const dur = await Music.awaitDuration(3000);
+    // 玩家自制歌曲：拉取存库谱面；失败则用程序生成谱面兜底
     let chart=null;
     try{ chart=await ensureChart(song); }
     catch(e){ console.warn('[演出] 谱面加载失败，退回程序生成谱面', e); }
-    // ★ 门槛3：方块轨道就绪（90%→99%）
-    setP(90,'🧱 准备方块轨道…');
-    await new Promise(r=>setTimeout(r,50));
+    // 演出中渲染分辨率封顶1.5：高画质手机每帧要算的像素减少约4成，3D只是背景肉眼几乎无差；退出时恢复
+    if(renderer.getPixelRatio() > 1.5) renderer.setPixelRatio(1.5);
+    // defer=true：只搭台不开播；startCountdown 倒计时归零后自动开播
     startGame({diff:diffId, bpm, offset:set.offset, speed:set.speed, duration:dur, songId:song.id, songName:song.name, chart}, true);
-    setP(100,'✅ 全部就绪！点按钮开演');
-    setTimeout(()=>pl.classList.remove('on'), 300);
-    // 「点我开演」闸门只绑一次：点击瞬间（真手势）恢复音频上下文 + 开播
-    if(!stageGateBound){
-      stageGateBound=true;
-      $('stageGateBtn').addEventListener('click', ()=>{
-        ensureCtx();
-        if(window.AudioContext && Music.ctx && Music.ctx.state==='suspended') Music.ctx.resume();
-        launchFromGate();
-      });
-    }
+    startCountdown();
   },
   resume(){ resumeGame(); $('pauseOv').classList.remove('on'); },
   quitShow(){
@@ -247,10 +231,55 @@ const main={
     showUIRoot(true);           // ★ 退出演出必须恢复主界面（之前漏了）
     camera.position.copy(CAM_HOME);
     Fx.camBase.copy(CAM_HOME);
+    const q=Store.data.set.quality;   // ★ 恢复主界面的渲染分辨率
+    renderer.setPixelRatio(q>=2?Math.min(devicePixelRatio,2):q);
     startMenuBgm();             // 回到菜单：恢复 BGM
   },
 };
 initUI(main);
+
+// ============================================================
+// 开局倒计时：舞台中央 3、2、1，归零自动开播
+// ============================================================
+let countTimer=null;    // 句柄持久化：重开前先清旧计时，防止多个倒计时叠加
+function startCountdown(){
+  clearInterval(countTimer);
+  const gate=$('stageGate'), btn=$('stageGateBtn'), sub=$('stageGateSub');
+  gate.classList.add('on');
+  btn.classList.add('counting');
+  btn.disabled=true;
+  let n=3;
+  btn.textContent=n;
+  sub.textContent='准备好，马上开跳';
+  countTimer=setInterval(async ()=>{
+    n--;
+    if(n>0){
+      btn.textContent=n;
+      // 重触发弹出动画：先摘掉样式再强制回流，再挂回去
+      btn.classList.remove('counting'); void btn.offsetWidth; btn.classList.add('counting');
+      return;
+    }
+    clearInterval(countTimer); countTimer=null;
+    btn.classList.remove('counting');
+    if(!Game.playing) return;          // 极端情况：倒计时中演出已取消 → 不再开播
+    const ok=await launchFromGate();   // 桌面浏览器：自动开播
+    if(!ok){                            // 手机浏览器拦截自动播放：按钮留作兜底，亲手点一下
+      btn.disabled=false;
+      btn.textContent='▶ 点我开演';
+      sub.textContent='手机要求音乐由你亲手点开';
+    }
+  },1000);
+}
+
+// 兜底点击：正常流程倒计时会自动开播，无需点；仅手机拦截自动播放时才用到
+$('stageGateBtn').addEventListener('click', async ()=>{
+  ensureCtx();
+  sfxClick();
+  const btn=$('stageGateBtn');
+  btn.disabled=true;
+  const ok=await launchFromGate();
+  if(!ok) btn.disabled=false;
+});
 
 // ============================================================
 // 演出结束回调：结算 + 存档 + 成就
@@ -289,7 +318,9 @@ function onEndlessOver(res){
 // ============================================================
 const KEYMAP={ArrowLeft:0,ArrowDown:1,ArrowUp:2,ArrowRight:3,KeyA:0,KeyS:1,KeyW:2,KeyD:3};
 addEventListener('keydown',e=>{
-  if(Game.playing){
+  // 倒计时/闸门显示期间游戏还没真正开始：屏蔽游戏按键（防误判/误暂停）
+  const gateOpen=$('stageGate').classList.contains('on');
+  if(Game.playing && !gateOpen){
     if(e.code in KEYMAP){ e.preventDefault(); if(!e.repeat) hitLane(KEYMAP[e.code]); }
     else if(e.code==='Escape'||e.code==='KeyP'){
       e.preventDefault();
@@ -364,6 +395,7 @@ function enterHome(){
     showUIRoot(true);
     showScreen('scr-home');
     renderHome();
+    setTimeout(showNoticeIfNeeded, 600);  // ★ 主界面出来后弹公告（延迟一点更自然）
     setMenuBgmVolume(Store.data.set.vol);
     startMenuBgm();                   // ★ 进入主界面：启动菜单 BGM
     if(ok) burst(new THREE.Vector3(0,1.2,0.5), 0xffe17a, 70);
@@ -371,6 +403,45 @@ function enterHome(){
     // ★ 进主界面 2.5~5 秒后随机来一声搞怪语音
     setTimeout(()=>sfxRandomVoice(), 2500 + Math.random()*2500);
   });
+}
+
+// ---------- 公告弹窗 ----------
+const NOTICE_VER='3';   // 公告版本号：每次更换公告内容就 +1，当天勾选过「不再弹出」的同学也会重新看到新公告
+
+// 一键复制：优先现代 clipboard API；QQ/微信等旧内核浏览器用 textarea+execCommand 兜底
+async function copyText(t){
+  try{ await navigator.clipboard.writeText(t); return true; }
+  catch(e){
+    const ta=document.createElement('textarea');
+    ta.value=t; ta.style.position='fixed'; ta.style.opacity='0';
+    document.body.appendChild(ta); ta.focus(); ta.select();
+    let ok=false;
+    try{ ok=document.execCommand('copy'); }catch(_){}
+    ta.remove();
+    return ok;
+  }
+}
+// 复制按钮事件委托（只绑一次）：成功显示「✅ 已复制」，1.6 秒后恢复
+$('noticeOv').addEventListener('click', async e=>{
+  const b=e.target.closest('.notice-copy');
+  if(!b) return;
+  const old=b.textContent;
+  const ok=await copyText(b.dataset.copy);
+  b.textContent= ok?'✅ 已复制':'❌ 复制失败';
+  setTimeout(()=>{ b.textContent=old; }, 1600);
+});
+
+function showNoticeIfNeeded(){
+  const n=new Date();
+  const today=n.getFullYear()+'-'+(n.getMonth()+1)+'-'+n.getDate();
+  if(localStorage.getItem('naiwa_notice_hide')===today+'|'+NOTICE_VER) return;  // 当天+同版本已关闭 → 不弹
+  const ov=$('noticeOv');
+  $('noticeHideToday').checked=false;
+  ov.classList.add('on');
+  $('noticeOk').onclick=()=>{
+    if($('noticeHideToday').checked) localStorage.setItem('naiwa_notice_hide', today+'|'+NOTICE_VER);
+    ov.classList.remove('on');
+  };
 }
 
 // ============================================================
