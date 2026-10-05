@@ -1,0 +1,45 @@
+# 云端打包蛙步 Android 外壳 APK
+# 触发方式：推送改动到本仓库（本工作流或 android-shell 目录），或在 GitHub 页面手动 Run workflow
+name: Build FrogStep APK
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'android-shell/**'
+      - '.github/workflows/build-apk.yml'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Gradle 8.7
+        uses: gradle/actions/setup-gradle@v3
+        with:
+          gradle-version: '8.7'
+
+      - name: Build debug APK
+        working-directory: android-shell
+        run: gradle assembleDebug --no-daemon --stacktrace
+
+      - name: Rename APK
+        working-directory: android-shell
+        run: cp app/build/outputs/apk/debug/app-debug.apk frogstep.apk
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: frogstep-apk
+          path: android-shell/frogstep.apk
+          retention-days: 30
