@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
 <meta charset="utf-8">
@@ -62,7 +62,7 @@ a.back:hover{color:#fff}
   <!-- ====== 真正的后台（暗号正确才显示） ====== -->
   <div id="adminRoot" style="display:none">
     <div class="topbar-tools">
-      <h1 style="margin:0">🛠️ 奶娃街舞 · 管理员后台</h1>
+      <h1 style="margin:0">🛠️ 蛙步 · 管理员后台</h1>
       <button class="btn-ghost" id="btnLogout">退出登录</button>
     </div>
     <div class="sub">管理本地存档数据 · 奶币充值 · 兑换码签发 · 数据维护</div>
@@ -177,7 +177,7 @@ a.back:hover{color:#fff}
           <input type="password" id="newPwd2" placeholder="再输一遍新密码" autocomplete="off">
         </div>
         <button class="btn-main" id="btnChangePwd" style="width:100%;margin-top:6px">确认修改</button>
-        <div class="hint">改密码后请牢记，忘记密码只能在浏览器控制台执行 localStorage.removeItem('naiwa_admin_pwd_hash') 重置。</div>
+        <div class="hint">改密码后请牢记，忘记密码只能在浏览器控制台执行 localStorage.removeItem('naiwa_step_admin_pwd_hash') 重置。</div>
       </div>
 
       <!-- 数据维护 -->
@@ -203,12 +203,11 @@ a.back:hover{color:#fff}
 const ADMIN_HASH = '#nai-boss';   // ★ URL 暗号：必须用 admin.html#nai-boss 打开（可改成你自己的暗号）
 // 默认密码 nailong2024 的 SHA-256（代码中不存明文；登录后请立刻改密码）
 const DEFAULT_PWD_HASH = 'e924979c94757ebe2c58afeea670511becee23e241f9d544e1e3a7ffff01d052';
-const PWD_HASH_KEY = 'naiwa_admin_pwd_hash';   // 改密后哈希存这里
-const SESSION_KEY = 'naiwa_admin_ok';
-const FAIL_KEY    = 'naiwa_admin_fail';        // {n:次数, until:锁定到的时间戳}
+const PWD_HASH_KEY = 'naiwa_step_admin_pwd_hash';   // 改密后哈希存这里
+const SESSION_KEY = 'naiwa_step_admin_ok';
+const FAIL_KEY    = 'naiwa_step_admin_fail';        // {n:次数, until:锁定到的时间戳}
+const KEY='naiwa_step_save_v1';
 const MAX_FAIL = 5, LOCK_MS = 30000;
-
-const KEY='naiwa_dance_save_v1';
 const SKINS_IDS=['classic','lemon','mint','sky','peach','strawberry','apple','orange','banana','matcha','berry','milktea','ocean','choco','grape','blueberry','cherry','watermelon','tomato','taro','coconut','caramel','honey','gold','neon','rainbow','galaxy'];
 
 const $=id=>document.getElementById(id);
@@ -229,7 +228,7 @@ if(location.hash !== ADMIN_HASH){
   $('adminRoot').style.display = 'none';
   throw new Error('404');   // 终止后续所有脚本
 }
-document.title = '奶娃街舞 · 管理员后台';
+document.title = '蛙步 · 管理员后台';
 $('fake404').style.display = 'none';
 $('adminRoot').style.display = 'block';
 

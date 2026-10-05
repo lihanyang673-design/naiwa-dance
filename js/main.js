@@ -1,4 +1,4 @@
-﻿// ============================================================
+// ============================================================
 // main.js —— 程序入口 / 总调度
 // 渲染器（开场+主舞台共用） → 开场动画 → 主舞台 → 渲染循环
 // ============================================================
@@ -190,7 +190,7 @@ function buildStage(theme){
 // ============================================================
 // 舞者：后台预载 rigged.glb（页面一打开就开始，与开场并行）
 // ============================================================
-console.log('%c========== 奶娃街舞 · 启动 ==========', 'color:#ffe17a;font-size:14px;font-weight:bold');
+console.log('%c========== 蛙步 · 启动 ==========', 'color:#ffe17a;font-size:14px;font-weight:bold');
 console.log('[启动] ① 后台开始下载舞者模型 rigged.glb（17MB）…');
 const tBoot0=performance.now();
 const dancerReady=new Promise((res)=>{
@@ -242,7 +242,7 @@ const main={
     showStageUI(true);
     camera.position.copy(CAM_PLAY);
     Fx.camBase.copy(CAM_PLAY);
-    resetBody();               // ★ 开演前复位奶蛙（清上局躺地/庆祝残留）
+    resetBody();               // ★ 开演前复位蛙（清上局躺地/庆祝残留）
     Game.hooks.onEnd=onShowEnd;
     Game.hooks.onEndlessEnd=onEndlessOver;
     // 拿到歌曲真实时长（很快，元数据选歌时一般已就绪）
@@ -335,7 +335,7 @@ function onEndlessOver(res){
   camera.position.copy(CAM_HOME);
   Fx.camBase.copy(CAM_HOME);
   showEndlessResult(res);           // ui 内部完成存档 + 自动上传无尽榜
-  lieDown();                        // ❤ 打光：奶娃躺地上
+  lieDown();                        // ❤ 打光：蛙躺地上
   showUIRoot(true);
   startMenuBgm();
   setTimeout(()=>sfxEndVoice(), 500);
@@ -370,7 +370,7 @@ addEventListener('resize',()=>{
   if(_bgTex) layoutBgTex(_bgTex);
 });
 
-// 主界面点击奶娃 → 随机搞怪语音 + 轻微弹跳
+// 主界面点击蛙 → 随机搞怪语音 + 轻微弹跳
 renderer.domElement.addEventListener('pointerdown',()=>{
   if(!Game.playing){
     sfxPokeVoice();
@@ -464,12 +464,12 @@ $('noticeOv').addEventListener('click', async e=>{
 function showNoticeIfNeeded(force){
   const n=new Date();
   const today=n.getFullYear()+'-'+(n.getMonth()+1)+'-'+n.getDate();
-  if(!force && localStorage.getItem('naiwa_notice_hide')===today+'|'+NOTICE_VER) return;  // 当天+同版本已关闭 → 不弹
+  if(!force && localStorage.getItem('naiwa_step_notice_hide')===today+'|'+NOTICE_VER) return;  // 当天+同版本已关闭 → 不弹
   const ov=$('noticeOv');
   $('noticeHideToday').checked=false;
   ov.classList.add('on');
   const close=()=>{
-    if($('noticeHideToday').checked) localStorage.setItem('naiwa_notice_hide', today+'|'+NOTICE_VER);
+    if($('noticeHideToday').checked) localStorage.setItem('naiwa_step_notice_hide', today+'|'+NOTICE_VER);
     ov.classList.remove('on');
   };
   $('noticeOk').onclick=close;

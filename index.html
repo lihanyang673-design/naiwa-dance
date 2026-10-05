@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
 <meta charset="utf-8">
@@ -6,7 +6,7 @@
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>奶娃街舞 · Dance Baby</title>
+<title>蛙步 · Frog Step</title>
 <link rel="stylesheet" href="style.css?v=20261116">
 </head>
 <body>
@@ -18,8 +18,8 @@
      注意：「开跳」按钮必须在这一层内（本层 z-index 最高），
      否则会被自己盖住造成「按钮点不到→开场不播→遮罩永不消失」的死锁 -->
 <div id="loadOverlay">
-  <img class="load-baby" src="baby.png" alt="奶娃">
-  <div class="load-txt" id="loadTxt">奶娃街舞 · 装扮舞台中…</div>
+  <img class="load-baby" src="baby.png" alt="蛙">
+  <div class="load-txt" id="loadTxt">蛙步 · 装扮舞台中…</div>
   <div class="load-bar"><i id="loadBar"></i></div>
   <!-- 初始化就绪前隐藏；就绪后由 main.js 点亮，点击解锁音频并开始开场 -->
   <button class="gate-btn hidden" id="loadStart" disabled>🎵 开 跳 🎵</button>
@@ -81,9 +81,9 @@
 <div id="openingUI">
   <!-- 交叉闪光 -->
   <div id="crossFlash"></div>
-  <!-- 「奶娃街舞」Q弹大标题 -->
+  <!-- 「蛙步」Q弹大标题 -->
   <div id="openTitle">
-    <span class="c1">奶</span><span class="c2">娃</span><span class="c3">街</span><span class="c4">舞</span>
+    <span class="c1">蛙</span><span class="c2">步</span>
   </div>
   <!-- 跳过提示 -->
   <div id="openSkip">点击跳过 »</div>
@@ -93,7 +93,7 @@
 <div id="uiRoot">
   <!-- 顶栏 -->
   <header id="topbar">
-    <div class="logo">奶娃街舞</div>
+    <div class="logo">蛙步</div>
     <nav id="mainNav">
       <button data-scr="scr-home" class="cur">🏠 主界面</button>
       <button data-scr="scr-play">🎵 开跳</button>
@@ -113,8 +113,8 @@
   <!-- 主界面 -->
   <section class="screen cur" id="scr-home">
     <div class="home-hero">
-      <h1>奶娃街舞</h1>
-      <div class="slogan">N A I · W A · D A N C E —— 跟上节拍，扭起来！</div>
+      <h1>蛙步</h1>
+      <div class="slogan">F R O G · S T E P —— 跟上节拍，扭起来！</div>
       <div class="home-btns">
         <button class="btn-main" id="btnGoPlay">▶ 立即开跳</button>
       </div>
@@ -313,7 +313,7 @@
     </div>
 
     <div style="text-align:center;margin-top:18px">
-      <span id="verEgg" style="font-size:11px;color:var(--sub);opacity:.5;cursor:default;user-select:none">奶蛙街舞 v1.0</span>
+      <span id="verEgg" style="font-size:11px;color:var(--sub);opacity:.5;cursor:default;user-select:none">蛙步 v1.0</span>
       <a id="adminSecretLink" href="admin.html#nai-boss" target="_blank" style="display:none;margin-left:10px;font-size:12px;color:var(--yellow);text-decoration:none">🛠️ 管理入口</a>
       <div style="margin-top:6px;font-size:12px;color:var(--sub);opacity:.75;user-select:text">
         🎮 制作者：<b style="color:var(--cyan)">念因</b> · QQ：<b>1139568835</b>
@@ -485,7 +485,7 @@
     </div>
   </div>
   <div class="crop-bottom">
-    <div class="crop-stage" id="cropStage">拖动方框选位置，拖右下角调大小（框里🕺处会被奶蛙挡住）</div>
+    <div class="crop-stage" id="cropStage">拖动方框选位置，拖右下角调大小（框里🕺处会被蛙挡住）</div>
     <button class="btn-main" id="cropConfirm" disabled>✓ 确认上传</button>
   </div>
 </div>

@@ -15,7 +15,7 @@
   'use strict';
 
   // ★★★ 密钥：正式上线前建议改成只有你知道的字符串 ★★★
-  const SECRET = 'naiwa-dance-2024-secret-change-me';
+  const SECRET = 'naiwa-step-2024-secret-change-me';
 
   // 编号字符集：去掉易混淆的 0/O、1/I/L
   const ID_CHARS = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
@@ -204,7 +204,7 @@
       return {ok:false, reason:'兑换码内容异常'};
     if(payload.e && Date.now() > payload.e) return {ok:false, reason:'兑换码已过期'};
     if(payload.u && payload.u !== (uid||'').toUpperCase())
-      return {ok:false, reason:'这个码是发给其他奶娃的，用不了'};
+      return {ok:false, reason:'这个码是发给其他蛙的，用不了'};
     const key = parts[1];
     if(usedList.includes(key)) return {ok:false, reason:'这个码已经兑换过啦'};
 

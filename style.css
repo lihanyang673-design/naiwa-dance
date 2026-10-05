@@ -1,5 +1,5 @@
 /* ============================================================
-   奶娃街舞 · 全站样式
+   蛙步 · 全站样式
    主题：糖果霓虹街舞风 —— 深紫底 + 奶粉红/奶青/奶黄霓虹
    ============================================================ */
 :root{
@@ -100,7 +100,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
   100%{transform:translate(-50%,-50%) scale(3.2);opacity:0}
 }
 
-/* 「奶娃街舞」大标题 —— 单色 Q 版，弹出→放大→缩小→淡出 */
+/* 「蛙步」大标题 —— 单色 Q 版，弹出→放大→缩小→淡出 */
 #openTitle{
   position:absolute;left:50%;top:42%;
   transform:translate(-50%,-50%);
@@ -824,7 +824,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
     linear-gradient(90deg,transparent 33.2%,rgba(255,255,255,.55) 33.2% 33.6%,transparent 33.6% 66.4%,rgba(255,255,255,.55) 66.4% 66.8%,transparent 66.8%),
     linear-gradient(0deg,transparent 33.2%,rgba(255,255,255,.55) 33.2% 33.6%,transparent 33.6% 66.4%,rgba(255,255,255,.55) 66.4% 66.8%,transparent 66.8%);
 }
-/* 奶蛙占位提示：框内下方居中（舞者头顶大约在框的一半处）*/
+/* 蛙占位提示：框内下方居中（舞者头顶大约在框的一半处）*/
 .crop-dancer{
   position:absolute;left:50%;bottom:2px;transform:translateX(-50%);
   font-size:13px;color:#fff;opacity:.85;pointer-events:none;white-space:nowrap;

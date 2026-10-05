@@ -1,10 +1,10 @@
-﻿// ============================================================
+// ============================================================
 // opening.js —— 开场动画
-// 按用户要求：只保留两个 3D 奶娃模型按路径飞过，无任何特效（无拖尾/光带/闪光/粒子）
+// 按用户要求：只保留两个 3D 蛙模型按路径飞过，无任何特效（无拖尾/光带/闪光/粒子）
 // 流程：
 //  1. 简洁糖果渐变背景
 //  2. baby1.glb 左上→右下、baby2.glb 右上→左下，干净飞过
-//  3. 弹出「奶娃街舞」Q 弹标题 → 淡出 → 进主界面
+//  3. 弹出「蛙步」Q 弹标题 → 淡出 → 进主界面
 // ============================================================
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
@@ -129,7 +129,7 @@ async function onGateClick(){
       loadBabyLog('baby2.glb',1.9),
     ]);
     if(finished) return;                 // 等待期间被跳过就不再继续
-    console.log('%c[开场] ✓ 两个奶娃加载完成，开始飞行', 'color:#7fffd4;font-weight:bold');
+    console.log('%c[开场] ✓ 两个蛙加载完成，开始飞行', 'color:#7fffd4;font-weight:bold');
 
     t0=performance.now();
 
@@ -169,7 +169,7 @@ async function onGateClick(){
     later(2450+2100, sfxOutro);          // 标题淡出尾声音效
     later(2450+2300, finish);            // 标题动画结束 → 进主界面
   }catch(e){
-    // ★ 模型下载失败/超时：也照常弹出「奶娃街舞」标题 → 进主界面（保证开场完整走完）
+    // ★ 模型下载失败/超时：也照常弹出「蛙步」标题 → 进主界面（保证开场完整走完）
     console.error('[开场] ⚠ 模型未就绪（超时/失败），直接弹出标题进主界面', e);
     t0=performance.now();
     clearLater(); showTitle();

@@ -1,5 +1,5 @@
 // ============================================================
-// dancer.js —— 奶娃舞者（核心模块）
+// dancer.js —— 蛙步舞者（核心模块）
 //
 // 模型 rigged.glb 是【单块网格、无骨骼、无蒙皮、无动画】。
 //
@@ -31,7 +31,7 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
 // ---------------- 可调参数（看效果后微调这里） ----------------
 const SPLIT = {
-  HEAD_YN : 0.62,  // 脖子高度：身高的 62%（奶蛙头大）
+  HEAD_YN : 0.62,  // 脖子高度：身高的 62%（蛙头大）
   HIP_YN  : 0.33,  // 胯部高度
   SPINE_YN: 0.50,  // 脊柱中节高度（手臂挂这里）
   LEG_YN  : 0.30,  // 腿/身体分界
@@ -256,7 +256,7 @@ function build(gltf){
   let rHead=H*0.16;
   if(headVerts.length){
     const ds=headVerts.map(i=>Math.max(Math.abs(pos.getX(i)-cx),Math.abs(pos.getZ(i)-midz)));
-    rHead=pct(ds,0.8)*1.3;   // 奶蛙头特别大，系数放宽保证整个头都在影响范围内
+    rHead=pct(ds,0.8)*1.3;   // 蛙头特别大，系数放宽保证整个头都在影响范围内
   }
   // 躯干半径（用肚子区域到中轴的横向距离）
   let rBelly=H*0.22;
@@ -364,7 +364,7 @@ function build(gltf){
   Dancer._baseX=body.position.x;
   Dancer._baseY=body.position.y;
 
-  console.log(`%c[奶蛙绑骨] 完成：顶点 ${VN}，7 根骨，兜底顶点 ${fallbackCount} 个`, 'color:#ffe17a');
+  console.log(`%c[蛙步绑骨] 完成：顶点 ${VN}，7 根骨，兜底顶点 ${fallbackCount} 个`, 'color:#ffe17a');
   if(typeof window!=='undefined') window.__dancer=Dancer;   // 调试只读钩子（同 __game/__music 风格）
 }
 

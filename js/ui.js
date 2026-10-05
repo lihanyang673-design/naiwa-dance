@@ -1,4 +1,4 @@
-﻿// ============================================================
+// ============================================================
 // ui.js —— 界面系统：存档 / 导航 / 商城 / 图鉴 / 成就 / 排行 / 设置 / 结算
 //          + 玩家上传歌曲（自动生成谱面 → 存班级数据库 → 全班可玩）
 // ============================================================
@@ -9,7 +9,7 @@ import { Game, pauseGame } from './game.js?v=20261116';
 // ============================================================
 // 存档（localStorage）
 // ============================================================
-const KEY='naiwa_dance_save_v1';
+const KEY='naiwa_step_save_v1';
 const DEFAULTS={
   playerId:'',             // 玩家唯一编号（首次进入自动生成，用于收发兑换码）
   coins:350,               // 每位新玩家初始奶币
@@ -74,14 +74,14 @@ export const SKINS=[
   // ===== 150 奶币：常见水果 =====
   {id:'strawberry', name:'草莓奶红', desc:'红彤彤，甜丝丝，头上一点绿', price:150,
    colors:{head:0xff7a8a,belly:0xff4d6a}},
-  {id:'apple',   name:'苹果奶脆', desc:'一天一苹果，奶娃远离我', price:150,
+  {id:'apple',   name:'苹果奶脆', desc:'一天一苹果，蛙远离我', price:150,
    colors:{head:0xff6b6b,belly:0xe84444}},
   {id:'orange',  name:'橙子奶VC', desc:'满满维C，活力满满', price:150,
    colors:{head:0xffc07a,belly:0xff9a3d}},
   {id:'banana',  name:'香蕉奶黄', desc:'弯弯的，甜甜的', price:150,
    colors:{head:0xfff08a,belly:0xffd93d}},
   // ===== 300 奶币：特色饮品 =====
-  {id:'matcha',  name:'抹茶奶绿', desc:'微苦回甘，纯狱系奶娃', price:300,
+  {id:'matcha',  name:'抹茶奶绿', desc:'微苦回甘，纯狱系蛙', price:300,
    colors:{head:0xbfe8c0,belly:0x93d19a}},
   {id:'berry',   name:'草莓奶昔', desc:'粉粉嫩嫩，甜度拉满', price:300,
    colors:{head:0xffc2d4,belly:0xff9bbd}},
@@ -136,9 +136,9 @@ export const THEMES=[
   {id:'space',  name:'太空蹦迪', desc:'失重节拍，银河打碟',
    bg:0x050514, fog:[14,44], floor:0x101028, ring:0x7a4dff, c1:0x7a4dff, c2:0x36ffc2,
    lampA:1, lampB:1, sky:'stars'},
-  {id:'it6', name:'奶蛙1', desc:'自定义图片背景', bgImage:'1791122474781_871541451.jpg', fromDb:6},
-  {id:'it7', name:'奶蛙2', desc:'自定义图片背景', bgImage:'1791122485709_216242919.jpg', fromDb:7},
-  {id:'it8', name:'奶蛙3', desc:'自定义图片背景', bgImage:'1791122502789_885100847.jpg', fromDb:8},
+  {id:'it6', name:'蛙步1', desc:'自定义图片背景', bgImage:'1791122474781_871541451.jpg', fromDb:6},
+  {id:'it7', name:'蛙步2', desc:'自定义图片背景', bgImage:'1791122485709_216242919.jpg', fromDb:7},
+  {id:'it8', name:'蛙步3', desc:'自定义图片背景', bgImage:'1791122502789_885100847.jpg', fromDb:8},
 ];
 
 // 歌曲库：只保留真实存在的内置曲 music.mp3。
@@ -234,10 +234,10 @@ let myIdentity=null;   // /api/me：{id, isAdmin}，用于判断能否删除
 let serverOn=false;    // 是否连着班级服务器（静态版为 false → 上传走临时模式，在线排行不可用）
 
 // ===== 本地持久化：IndexedDB 存音频/图片 Blob，localStorage 存元数据 =====
-const TEMP_DB='naiwa_dance_local';     // IndexedDB 数据库名
+const TEMP_DB='naiwa_step_local';     // IndexedDB 数据库名
 const TEMP_STORE='songs';              // objectStore 名（歌曲和舞池图片共用，id 前缀区分）
-const TEMP_META_KEY='naiwa_dance_tempsongs_v1';  // localStorage 元数据 key
-const TEMP_THEME_META_KEY='naiwa_dance_tempthemes_v1';  // 本地舞池元数据 key
+const TEMP_META_KEY='naiwa_step_tempsongs_v1';  // localStorage 元数据 key
+const TEMP_THEME_META_KEY='naiwa_step_tempthemes_v1';  // 本地舞池元数据 key
 // 打开/初始化 IndexedDB（异步单例 Promise）
 let _dbP=null;
 function openDB(){
@@ -542,9 +542,9 @@ export const DIFFS=[
 
 const CODEX=[
   {ic:'⬅️', key:'← 左键', name:'左勾鞭手', desc:'左手大回环甩出去，鞭出残影，古典 Breaking 起手式。Perfect 时会甩得更狠。'},
-  {ic:'⬇️', key:'↓ 下键', name:'扫堂双踢', desc:'双腿交替前踢 + 下蹲闪避，落地带弹性回弹，奶娃牌地板动作。'},
+  {ic:'⬇️', key:'↓ 下键', name:'扫堂双踢', desc:'双腿交替前踢 + 下蹲闪避，落地带弹性回弹，蛙牌地板动作。'},
   {ic:'⬆️', key:'↑ 上键', name:'扭肚抬头', desc:'肚子魔性左右一扭，脑袋高高抬起——不信你只看一遍。'},
-  {ic:'➡️', key:'→ 右键', name:'大回旋 360°', desc:'整个奶娃原地转一整圈，附带挤压变形，街舞招牌杀招。'},
+  {ic:'➡️', key:'→ 右键', name:'大回旋 360°', desc:'整个蛙原地转一整圈，附带挤压变形，街舞招牌杀招。'},
 ];
 
 const ACHS=[
@@ -575,7 +575,7 @@ const ACHS=[
   {id:'pf1000',ic:'🎯', name:'完美之神', desc:'累计 1000 次 PERFECT', goal:1000, get:s=>s.stats.totalPerfect},
   // ===== 涂装 =====
   {id:'buy1',  ic:'🛍️', name:'氪金第一步', desc:'购买第一套涂装', goal:1, get:s=>s.owned.length-1},
-  {id:'own4',  ic:'👕', name:'时尚奶娃', desc:'拥有 4 套涂装', goal:4, get:s=>s.owned.length},
+  {id:'own4',  ic:'👕', name:'时尚蛙', desc:'拥有 4 套涂装', goal:4, get:s=>s.owned.length},
   {id:'own8',  ic:'👔', name:'衣帽间', desc:'拥有 8 套涂装', goal:8, get:s=>s.owned.length},
   {id:'own15', ic:'🧥', name:'穿搭博主', desc:'拥有 15 套涂装', goal:15, get:s=>s.owned.length},
   {id:'ownall',ic:'👑', name:'涂装收藏家', desc:'拥有全部涂装', goal:26, get:s=>s.owned.length},
@@ -1409,7 +1409,7 @@ function bindSettings(){
 
   // ---- 管理入口暗号：连点版本号 5 次才显示（普通玩家看不到）----
   const egg=$('verEgg'), secret=$('adminSecretLink');
-  if(sessionStorage.getItem('naiwa_admin_unlocked')) secret.style.display='inline';
+  if(sessionStorage.getItem('naiwa_step_admin_unlocked')) secret.style.display='inline';
   let eggTaps=0, eggTimer=0;
   egg.style.pointerEvents='auto';
   egg.addEventListener('click',()=>{
@@ -1417,7 +1417,7 @@ function bindSettings(){
     eggTaps++;
     if(eggTaps>=5){
       eggTaps=0;
-      sessionStorage.setItem('naiwa_admin_unlocked','1');
+      sessionStorage.setItem('naiwa_step_admin_unlocked','1');
       secret.style.display='inline';
       toast('🛠️ 管理入口已解锁');
     }else{
